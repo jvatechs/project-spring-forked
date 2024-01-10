@@ -21,18 +21,26 @@ public class FileUtil {
     private static final String ATTACHMENT_PATH = "./attachments/%s/";
 
     public static void upload(MultipartFile multipartFile, String directoryPath, String fileName) {
+        Path dirPath = Paths.get(directoryPath);
+
         if (multipartFile.isEmpty()) {
             throw new IllegalRequestDataException("Select a file to upload.");
         }
 
-        File dir = new File(directoryPath);
-        if (dir.exists() || dir.mkdirs()) {
-            File file = new File(directoryPath + fileName);
-            try (OutputStream outStream = new FileOutputStream(file)) {
-                outStream.write(multipartFile.getBytes());
-            } catch (IOException ex) {
-                throw new IllegalRequestDataException("Failed to upload file" + multipartFile.getOriginalFilename());
+        if (!Files.exists(dirPath)) {
+            try {
+                Files.createDirectory(dirPath);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
+        }
+
+        Path filePath = dirPath.resolve(fileName);
+
+        try {
+            multipartFile.transferTo(filePath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
